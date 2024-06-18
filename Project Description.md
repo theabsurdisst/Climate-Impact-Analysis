@@ -9,7 +9,7 @@ Setting up a PostgreSQL database to store and manage the collected data. Use SQL
 Data Processing and Storage:
 
 
-Create an ETL (Extract, Transform, Load) pipeline using Python to automate the data extraction from APIs, transformation (cleaning and preprocessing), and loading into the PostgreSQL database.
+Creating an ETL (Extract, Transform, Load) pipeline using Python to automate the data extraction from APIs, transformation (cleaning and preprocessing), and loading into the PostgreSQL database.
 Ensuring the data is normalized and structured for efficient querying and analysis.
 
 Statistical Modeling and Analysis:
