@@ -1,0 +1,64 @@
+import requests
+import pandas as pd
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine, Column, Integer, Float, String, Date
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+# Flask app setup
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://username:password@localhost:5432/climate_db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# Database setup
+DATABASE_URL = 'postgresql://username:password@localhost:5432/climate_db'
+engine = create_engine(DATABASE_URL)
+Base = declarative_base()
+
+# Define table structure
+class ClimateData(Base):
+    __tablename__ = 'climate_data'
+    id = Column(Integer, primary_key=True)
+    date = Column(Date)
+    temperature = Column(Float)
+    precipitation = Column(Float)
+    location = Column(String)
+
+Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
+session = Session()
+
+# Fetch data from Open-Meteo API
+response = requests.get("https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,precipitation")
+if response.status_code == 200:
+    data = response.json()
+    # Process and store data
+    for i, time in enumerate(data['hourly']['time']):
+        temperature = data['hourly']['temperature_2m'][i]
+        precipitation = data['hourly']['precipitation'][i]
+        
+        climate_entry = ClimateData(date=pd.to_datetime(time), temperature=temperature, precipitation=precipitation, location='Berlin')
+        session.add(climate_entry)
+
+    session.commit()
+    print("Data successfully stored in the database")
+else:
+    print("Failed to fetch data from the API")
+
+# Query data
+query_result = session.query(ClimateData).all()
+df = pd.DataFrame([(d.date, d.temperature, d.precipitation) for d in query_result], columns=['Date', 'Temperature', 'Precipitation'])
+print(df.head())
+
+# Flask route to display data
+@app.route('/')
+def home():
+    data = df.to_html()
+    return f'<h1>Climate Data</h1>{data}'
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
